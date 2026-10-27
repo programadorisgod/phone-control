@@ -1,0 +1,9 @@
+{
+  "name": "PC Remote Control",
+  "short_name": "PCRemote",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0c10",
+  "theme_color": "#0a0c10",
+  "orientation": "portrait"
+}

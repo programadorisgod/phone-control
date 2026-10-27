@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+backend/uinput_driver
+*.o
+*.a
+*.so
+
+# Logs & Environment
+*.log
+.env
+.DS_Store
+
+# Temporary files
+/tmp/
+*.swp
+*~

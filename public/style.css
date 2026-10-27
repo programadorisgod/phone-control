@@ -1,0 +1,755 @@
+/* Reset & Base Variables */
+:root {
+  --bg-primary: #0a0c10;
+  --bg-surface: #141720;
+  --bg-surface-elevated: #1e2230;
+  --bg-surface-active: #2a3044;
+  --text-main: #f3f4f6;
+  --text-muted: #9ca3af;
+  --accent-color: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-glow: rgba(59, 130, 246, 0.35);
+  --success-color: #10b981;
+  --danger-color: #ef4444;
+  --border-color: #272c3d;
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+}
+
+/* Header & Status Bar */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background-color: var(--bg-surface);
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #6b7280;
+  transition: background-color 0.3s ease;
+}
+
+.status-dot.connected {
+  background-color: var(--success-color);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.status-dot.disconnected {
+  background-color: var(--danger-color);
+}
+
+.latency-badge {
+  font-family: monospace;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-primary);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+}
+
+/* Navigation Tabs */
+.nav-tabs {
+  display: flex;
+  background-color: var(--bg-surface);
+  padding: 6px 12px;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-btn.active {
+  background-color: var(--bg-surface-elevated);
+  color: var(--accent-hover);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Main Content Area */
+.content-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.tab-panel {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  height: 100%;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.tab-panel.active {
+  display: flex;
+}
+
+/* ==========================================================================
+   1. TOUCHPAD PANEL
+   ========================================================================== */
+#panel-touchpad {
+  padding: 8px;
+  gap: 8px;
+}
+
+.touchpad-wrapper {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  position: relative;
+  min-height: 0;
+  width: 100%;
+}
+
+.touchpad-surface {
+  flex: 1;
+  background: radial-gradient(circle at center, #181d2a 0%, #10131c 100%);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  position: relative;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Fast Scroll Rail */
+.fast-scroll-rail {
+  width: 52px;
+  background: linear-gradient(180deg, #161b26 0%, #11141c 100%);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  touch-action: none;
+  user-select: none;
+  color: var(--text-muted);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+  transition: all 0.15s ease;
+  cursor: ns-resize;
+}
+
+.fast-scroll-rail:active, .fast-scroll-rail.active {
+  background: linear-gradient(180deg, #1e283d 0%, #172033 100%);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 12px var(--accent-glow);
+  color: #fff;
+}
+
+.scroll-icon-up, .scroll-icon-down {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.scroll-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  opacity: 0.6;
+}
+
+.mini-rail {
+  width: 44px;
+  border-radius: var(--radius-md);
+  padding: 8px 0;
+}
+
+/* ==========================================================================
+   MINI TOUCHPAD (Inside Keyboard Screen)
+   ========================================================================== */
+.mini-touchpad-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mini-touchpad-wrapper {
+  display: flex;
+  gap: 8px;
+  height: 125px;
+  width: 100%;
+}
+
+.mini-touchpad-surface {
+  flex: 1;
+  background: radial-gradient(circle at center, #181d2a 0%, #10131c 100%);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  position: relative;
+  touch-action: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.mini-touchpad-hint {
+  text-align: center;
+  color: #4b5563;
+  font-size: 0.78rem;
+  pointer-events: none;
+}
+
+.mini-mouse-buttons-row {
+  display: flex;
+  gap: 8px;
+  height: 42px;
+}
+
+.mini-btn {
+  flex: 1;
+  font-size: 0.88rem;
+  height: 100%;
+}
+
+.touchpad-hint {
+  text-align: center;
+  color: #4b5563;
+  font-size: 0.85rem;
+  pointer-events: none;
+  line-height: 1.6;
+}
+
+.touch-ripple {
+  position: absolute;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  transform: translate(-50%, -50%) scale(0);
+  pointer-events: none;
+  transition: transform 0.15s ease-out, opacity 0.2s ease-out;
+  opacity: 0;
+}
+
+.touch-ripple.active {
+  transform: translate(-50%, -50%) scale(1.5);
+  opacity: 1;
+}
+
+.mouse-buttons-row {
+  display: flex;
+  gap: 8px;
+  height: 72px;
+  flex-shrink: 0;
+}
+
+.mouse-btn {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.1s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mouse-btn.left-btn {
+  flex: 2;
+}
+
+.mouse-btn.middle-btn {
+  flex: 1;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.mouse-btn.right-btn {
+  flex: 2;
+}
+
+.mouse-btn:active, .mouse-btn.active {
+  background-color: var(--accent-color);
+  color: #fff;
+  transform: scale(0.97);
+}
+
+/* ==========================================================================
+   2. KEYBOARD PANEL
+   ========================================================================== */
+.keyboard-trigger-container {
+  margin-bottom: 12px;
+}
+
+.action-btn-large {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+
+.action-btn-large:active {
+  transform: scale(0.98);
+}
+
+.btn-icon {
+  font-size: 1.5rem;
+}
+
+.btn-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.btn-sub {
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.hidden-input {
+  position: absolute;
+  opacity: 0;
+  top: -100px;
+  left: -100px;
+  width: 1px;
+  height: 1px;
+  pointer-events: auto;
+}
+
+.keyboard-section-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+  margin: 10px 0 6px 2px;
+}
+
+.keys-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.modifiers-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.actions-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.key-enter {
+  grid-column: span 2;
+  background-color: var(--bg-surface-active);
+  border-color: #3b4259;
+}
+
+.key-space {
+  grid-column: span 2;
+}
+
+.key-btn {
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  padding: 12px 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.key-btn:active {
+  background-color: var(--accent-color);
+  color: white;
+  transform: scale(0.95);
+}
+
+.mod-key.active {
+  background-color: var(--accent-color);
+  color: white;
+  border-color: var(--accent-hover);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+/* D-Pad Arrows Grid */
+.dpad-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 72px);
+  grid-template-rows: repeat(2, 54px);
+  gap: 8px;
+  justify-content: center;
+  align-content: center;
+  margin: 14px auto 18px auto;
+}
+
+.dpad-btn {
+  width: 72px;
+  height: 54px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-radius: var(--radius-md);
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+}
+
+.dpad-btn.up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.dpad-btn.left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.dpad-btn.down {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.dpad-btn.right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.shortcuts-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-btn {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 8px 14px;
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip-btn:active {
+  background-color: var(--accent-color);
+  color: white;
+  transform: scale(0.96);
+}
+
+/* ==========================================================================
+   3. MEDIA PANEL
+   ========================================================================== */
+.media-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--text-main);
+}
+
+.media-controls-row {
+  display: flex;
+  gap: 10px;
+}
+
+.media-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 8px;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.media-btn .media-icon {
+  font-size: 1.5rem;
+}
+
+.media-btn:active {
+  background-color: var(--accent-color);
+  color: white;
+  transform: scale(0.96);
+}
+
+.media-btn.play-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+}
+
+.presentation-row {
+  display: flex;
+  gap: 10px;
+}
+
+.pres-btn {
+  flex: 1;
+  padding: 16px 8px;
+  font-size: 0.95rem;
+}
+
+/* ==========================================================================
+   4. SETTINGS PANEL
+   ========================================================================== */
+.settings-group {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-item label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.setting-item label span {
+  color: var(--accent-hover);
+  font-weight: 700;
+}
+
+.setting-item input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent-color);
+}
+
+.setting-toggle-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+/* Toggle Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #374151;
+  transition: 0.3s;
+  border-radius: 34px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.setting-token-box {
+  margin-top: 16px;
+}
+
+.action-btn-secondary {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 1000;
+}
+
+.modal-backdrop.hidden {
+  display: none;
+}
+
+.modal-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.token-input {
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  text-align: center;
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
+}
+
+.modal-btn {
+  padding: 12px;
+  background-color: var(--accent-color);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}

@@ -1,0 +1,14 @@
+{
+  "name": "phone-control-server",
+  "version": "1.0.0",
+  "description": "Remote touchpad and keyboard server for PC control from smartphone",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "qrcode-terminal": "^0.12.0",
+    "ws": "^8.18.0"
+  }
+}

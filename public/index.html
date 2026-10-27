@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PC Remote">
+  <meta name="theme-color" content="#0a0c10">
+  <title>Phone Control - Control Remoto PC</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Top Status Bar -->
+    <header class="status-bar">
+      <div class="brand">
+        <span class="brand-icon">🖱️</span>
+        <span class="brand-title">PC Remote</span>
+      </div>
+      <div class="connection-status">
+        <span id="status-indicator" class="status-dot disconnected"></span>
+        <span id="status-text">Conectando...</span>
+        <span id="latency-badge" class="latency-badge">-- ms</span>
+      </div>
+    </header>
+
+    <!-- Mode Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="nav-btn active" data-tab="touchpad">
+        <span class="nav-icon">👆</span>
+        <span class="nav-label">Touchpad</span>
+      </button>
+      <button class="nav-btn" data-tab="keyboard">
+        <span class="nav-icon">⌨️</span>
+        <span class="nav-label">Teclado</span>
+      </button>
+      <button class="nav-btn" data-tab="media">
+        <span class="nav-icon">🎵</span>
+        <span class="nav-label">Media</span>
+      </button>
+      <button class="nav-btn" data-tab="settings">
+        <span class="nav-icon">⚙️</span>
+        <span class="nav-label">Ajustes</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Panels -->
+    <main class="content-area">
+      <!-- 1. TOUCHPAD PANEL -->
+      <section id="panel-touchpad" class="tab-panel active">
+        <div class="touchpad-wrapper">
+          <div id="touchpad-surface" class="touchpad-surface">
+            <div class="touchpad-hint">
+              <p>1 dedo: Mover puntero y clic</p>
+              <p>2 dedos: Clic derecho y Scroll</p>
+            </div>
+            <div id="touch-pointer-ripple" class="touch-ripple"></div>
+          </div>
+          <!-- Fast Touch Scroll Bar -->
+          <div id="fast-scroll-touchpad" class="fast-scroll-rail" title="Desliza 1 dedo para scroll rápido">
+            <span class="scroll-icon-up">▲</span>
+            <span class="scroll-label">SCROLL</span>
+            <span class="scroll-icon-down">▼</span>
+          </div>
+        </div>
+
+        <!-- Physical Mouse Buttons Row -->
+        <div class="mouse-buttons-row">
+          <button id="btn-mouse-left" class="mouse-btn left-btn">
+            <span class="btn-text">Clic Izq</span>
+          </button>
+          <button id="btn-mouse-middle" class="mouse-btn middle-btn">
+            <span class="btn-text">Medio</span>
+          </button>
+          <button id="btn-mouse-right" class="mouse-btn right-btn">
+            <span class="btn-text">Clic Der</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 2. KEYBOARD PANEL -->
+      <section id="panel-keyboard" class="tab-panel">
+        <!-- Integrated Mini-Touchpad & Quick Scroll -->
+        <div class="mini-touchpad-card">
+          <div class="mini-touchpad-wrapper">
+            <div id="mini-touchpad-surface" class="mini-touchpad-surface">
+              <div class="mini-touchpad-hint">👆 Mini Touchpad (mueve el puntero y toca para clic)</div>
+              <div id="mini-touch-ripple" class="touch-ripple"></div>
+            </div>
+            <div id="fast-scroll-keyboard" class="fast-scroll-rail mini-rail" title="Scroll rápido">
+              <span class="scroll-icon-up">▲</span>
+              <span class="scroll-label">SCROLL</span>
+              <span class="scroll-icon-down">▼</span>
+            </div>
+          </div>
+          <div class="mini-mouse-buttons-row">
+            <button id="btn-mini-mouse-left" class="mouse-btn mini-btn">Clic Izq</button>
+            <button id="btn-mini-mouse-right" class="mouse-btn mini-btn">Clic Der</button>
+          </div>
+        </div>
+
+        <!-- Native Keyboard Trigger Box -->
+        <div class="keyboard-trigger-container">
+          <button id="btn-open-keyboard" class="action-btn-large">
+            <span class="btn-icon">💬</span>
+            <span class="btn-title">Abrir Teclado del Teléfono</span>
+            <span class="btn-sub">Escribe texto o usa dictado por voz</span>
+          </button>
+          <!-- Hidden input field to capture mobile soft keyboard -->
+          <input type="text" id="hidden-keyboard-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="hidden-input">
+        </div>
+
+        <!-- Special Modifiers Row -->
+        <div class="keyboard-section-title">Modificadores</div>
+        <div class="keys-grid modifiers-grid">
+          <button class="key-btn mod-key" data-key="ControlLeft">Ctrl</button>
+          <button class="key-btn mod-key" data-key="AltLeft">Alt</button>
+          <button class="key-btn mod-key" data-key="ShiftLeft">Shift</button>
+          <button class="key-btn mod-key" data-key="MetaLeft">Super</button>
+        </div>
+
+        <!-- Quick Editing Keys -->
+        <div class="keyboard-section-title">Navegación y Acciones</div>
+        <div class="keys-grid actions-grid">
+          <button class="key-btn" data-tap="Escape">Esc</button>
+          <button class="key-btn" data-tap="Tab">Tab</button>
+          <button class="key-btn" data-tap="Delete">Supr</button>
+          <button class="key-btn" data-tap="Backspace">⌫ Borrar</button>
+          <button class="key-btn key-enter" data-tap="Enter">↵ Enter</button>
+          <button class="key-btn key-space" data-tap="Space">Espacio</button>
+        </div>
+
+        <!-- Arrow D-Pad -->
+        <div class="keyboard-section-title">Flechas de Dirección</div>
+        <div class="dpad-grid">
+          <button class="key-btn dpad-btn up" data-tap="ArrowUp">▲</button>
+          <button class="key-btn dpad-btn left" data-tap="ArrowLeft">◀</button>
+          <button class="key-btn dpad-btn down" data-tap="ArrowDown">▼</button>
+          <button class="key-btn dpad-btn right" data-tap="ArrowRight">▶</button>
+        </div>
+
+        <!-- Common Shortcuts Chips -->
+        <div class="keyboard-section-title">Atajos Rápidos</div>
+        <div class="shortcuts-row">
+          <button class="chip-btn" data-shortcut="ctrl+c">Ctrl+C</button>
+          <button class="chip-btn" data-shortcut="ctrl+v">Ctrl+V</button>
+          <button class="chip-btn" data-shortcut="ctrl+z">Ctrl+Z</button>
+          <button class="chip-btn" data-shortcut="ctrl+a">Ctrl+A</button>
+          <button class="chip-btn" data-shortcut="alt+tab">Alt+Tab</button>
+          <button class="chip-btn" data-shortcut="super+q">Cerrar App</button>
+        </div>
+      </section>
+
+      <!-- 3. MEDIA & SYSTEM PANEL -->
+      <section id="panel-media" class="tab-panel">
+        <div class="media-card">
+          <h3 class="card-title">🔊 Control de Volumen</h3>
+          <div class="media-controls-row">
+            <button class="media-btn" data-media="volume_down">
+              <span class="media-icon">🔉</span>
+              <span>Bajar</span>
+            </button>
+            <button class="media-btn" data-media="mute">
+              <span class="media-icon">🔇</span>
+              <span>Mute</span>
+            </button>
+            <button class="media-btn" data-media="volume_up">
+              <span class="media-icon">🔊</span>
+              <span>Subir</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="media-card">
+          <h3 class="card-title">🎵 Reproducción Multimedia</h3>
+          <div class="media-controls-row">
+            <button class="media-btn" data-media="prev">
+              <span class="media-icon">⏮️</span>
+              <span>Anterior</span>
+            </button>
+            <button class="media-btn play-btn" data-media="play_pause">
+              <span class="media-icon">⏯️</span>
+              <span>Play / Pausa</span>
+            </button>
+            <button class="media-btn" data-media="next">
+              <span class="media-icon">⏭️</span>
+              <span>Siguiente</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="media-card">
+          <h3 class="card-title">🖥️ Modo Presentación</h3>
+          <div class="presentation-row">
+            <button class="key-btn pres-btn" data-tap="PageUp">◀ Diapositiva Ant.</button>
+            <button class="key-btn pres-btn" data-tap="PageDown">Diapositiva Sig. ▶</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. SETTINGS PANEL -->
+      <section id="panel-settings" class="tab-panel">
+        <div class="settings-group">
+          <div class="setting-item">
+            <label for="setting-speed">Sensibilidad del Puntero: <span id="speed-val">1.2x</span></label>
+            <input type="range" id="setting-speed" min="0.4" max="2.5" step="0.1" value="1.2">
+          </div>
+
+          <div class="setting-item">
+            <label for="setting-scroll-speed">Sensibilidad del Scroll: <span id="scroll-val">1.0x</span></label>
+            <input type="range" id="setting-scroll-speed" min="0.5" max="2.0" step="0.1" value="1.0">
+          </div>
+
+          <div class="setting-toggle-item">
+            <span>Aceleración Dinámica</span>
+            <label class="switch">
+              <input type="checkbox" id="setting-accel" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-toggle-item">
+            <span>Scroll Natural (Invertido)</span>
+            <label class="switch">
+              <input type="checkbox" id="setting-natural-scroll">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-toggle-item">
+            <span>Vibración Háptica</span>
+            <label class="switch">
+              <input type="checkbox" id="setting-vibration" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-toggle-item">
+            <span>Mantener Pantalla Encendida</span>
+            <label class="switch">
+              <input type="checkbox" id="setting-wakelock" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="setting-token-box">
+          <button id="btn-reconnect" class="action-btn-secondary">Reconectar / Cambiar PIN</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- Auth PIN Modal (Fallback if not provided in URL) -->
+    <div id="auth-modal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <h3>🔒 Emparejamiento</h3>
+        <p>Introduce el PIN o Token mostrado en la consola del PC:</p>
+        <input type="text" id="auth-input-token" placeholder="Ej: a1b2c3" class="token-input">
+        <button id="btn-submit-token" class="modal-btn">Emparejar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
