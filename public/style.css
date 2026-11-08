@@ -1,4 +1,4 @@
-/* Reset & Base Variables */
+﻿/* Reset & Base Variables */
 :root {
   --bg-primary: #0a0c10;
   --bg-surface: #141720;
@@ -360,8 +360,132 @@ html, body {
 /* ==========================================================================
    2. KEYBOARD PANEL
    ========================================================================== */
+/* Touchpad Quick Video & Space Controls */
+.touchpad-quick-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.touchpad-quick-mini {
+  flex: 1;
+  padding: 12px 6px;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.touchpad-quick-mini:active {
+  background-color: var(--accent-color);
+  color: #fff;
+  transform: scale(0.96);
+}
+
+.touchpad-space-btn {
+  flex: 2;
+  padding: 12px 10px;
+  background-color: var(--bg-surface-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.touchpad-space-btn:active {
+  background-color: var(--accent-color);
+  color: #fff;
+  transform: scale(0.98);
+}
+
 .keyboard-trigger-container {
   margin-bottom: 12px;
+}
+
+/* Prominent Hero Spacebar */
+.prominent-spacebar-container {
+  margin-bottom: 14px;
+}
+
+.hero-spacebar-btn {
+  width: 100%;
+  padding: 16px 14px;
+  background: linear-gradient(180deg, #1e293b, #0f172a);
+  border: 2px solid #3b82f6;
+  border-radius: var(--radius-md);
+  color: #60a5fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.hero-spacebar-btn:active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #60a5fa;
+  transform: scale(0.98);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.5);
+}
+
+.hero-spacebar-btn .space-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.hero-spacebar-btn .space-label {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.hero-spacebar-btn .space-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(147, 197, 253, 0.3);
+}
+
+.spacebar-sub-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.sub-action-btn {
+  padding: 12px 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.enter-sub-btn {
+  background-color: #1e293b;
+  border-color: #10b981;
+  color: #34d399;
+}
+
+.enter-sub-btn:active {
+  background-color: #10b981;
+  color: #ffffff;
 }
 
 .action-btn-large {
@@ -588,6 +712,27 @@ html, body {
   background: linear-gradient(135deg, #10b981, #059669);
   color: white;
   border: none;
+}
+
+/* Video Seek Controls */
+.video-seek-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.seek-btn {
+  padding: 12px 4px;
+}
+
+.seek-btn .media-icon {
+  font-size: 1.25rem;
+}
+
+.seek-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .presentation-row {

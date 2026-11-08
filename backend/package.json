@@ -5,7 +5,9 @@
   "type": "module",
   "main": "server.mjs",
   "scripts": {
-    "start": "node server.mjs"
+    "start": "node server.mjs",
+    "build:windows": "cmd /c build-windows.bat",
+    "build:linux": "make"
   },
   "dependencies": {
     "qrcode-terminal": "^0.12.0",

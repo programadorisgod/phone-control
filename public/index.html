@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -78,6 +78,20 @@
             <span class="btn-text">Clic Der</span>
           </button>
         </div>
+
+        <!-- Touchpad Quick Video & Space Controls -->
+        <div class="touchpad-quick-actions">
+          <button class="key-btn touchpad-quick-mini" data-media="seek_backward_5" title="Retroceder 5 segundos">
+            <span>⏪ -5s</span>
+          </button>
+          <button class="key-btn touchpad-space-btn" data-tap="Space" title="Barra Espaciadora">
+            <span class="space-icon">␣</span>
+            <span>Espacio (Play / Pausa)</span>
+          </button>
+          <button class="key-btn touchpad-quick-mini" data-media="seek_forward_5" title="Adelantar 5 segundos">
+            <span>+5s ⏩</span>
+          </button>
+        </div>
       </section>
 
       <!-- 2. KEYBOARD PANEL -->
@@ -112,6 +126,19 @@
           <input type="text" id="hidden-keyboard-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" class="hidden-input">
         </div>
 
+        <!-- Barra Espaciadora Prominente (Acceso Rápido y Visible) -->
+        <div class="prominent-spacebar-container">
+          <button class="key-btn hero-spacebar-btn" data-tap="Space" title="Barra Espaciadora">
+            <span class="space-icon">␣</span>
+            <span class="space-label">BARRA ESPACIADORA</span>
+            <span class="space-badge">Espacio</span>
+          </button>
+          <div class="spacebar-sub-actions">
+            <button class="key-btn sub-action-btn" data-tap="Backspace" title="Borrar">⌫ Borrar</button>
+            <button class="key-btn sub-action-btn enter-sub-btn" data-tap="Enter" title="Enter">↵ Enter</button>
+          </div>
+        </div>
+
         <!-- Special Modifiers Row -->
         <div class="keyboard-section-title">Modificadores</div>
         <div class="keys-grid modifiers-grid">
@@ -129,7 +156,7 @@
           <button class="key-btn" data-tap="Delete">Supr</button>
           <button class="key-btn" data-tap="Backspace">⌫ Borrar</button>
           <button class="key-btn key-enter" data-tap="Enter">↵ Enter</button>
-          <button class="key-btn key-space" data-tap="Space">Espacio</button>
+          <button class="key-btn key-space" data-tap="Space">␣ Espacio</button>
         </div>
 
         <!-- Arrow D-Pad -->
@@ -187,6 +214,28 @@
             <button class="media-btn" data-media="next">
               <span class="media-icon">⏭️</span>
               <span>Siguiente</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="media-card">
+          <h3 class="card-title">🎬 Control de Video (Salto de Segundos)</h3>
+          <div class="video-seek-grid">
+            <button class="media-btn seek-btn" data-media="seek_backward_10" title="Retroceder 10 segundos">
+              <span class="media-icon">⏪</span>
+              <span class="seek-label">-10s</span>
+            </button>
+            <button class="media-btn seek-btn" data-media="seek_backward_5" title="Retroceder 5 segundos">
+              <span class="media-icon">◀</span>
+              <span class="seek-label">-5s</span>
+            </button>
+            <button class="media-btn seek-btn" data-media="seek_forward_5" title="Adelantar 5 segundos">
+              <span class="media-icon">▶</span>
+              <span class="seek-label">+5s</span>
+            </button>
+            <button class="media-btn seek-btn" data-media="seek_forward_10" title="Adelantar 10 segundos">
+              <span class="media-icon">⏩</span>
+              <span class="seek-label">+10s</span>
             </button>
           </div>
         </div>

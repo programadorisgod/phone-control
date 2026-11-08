@@ -4,6 +4,8 @@ node_modules/
 
 # Build artifacts
 backend/uinput_driver
+backend/windows_driver.exe
+*.exe
 *.o
 *.a
 *.so
@@ -11,6 +13,8 @@ backend/uinput_driver
 # Logs & Environment
 *.log
 .env
+.pin
+backend/.pin
 .DS_Store
 
 # Temporary files

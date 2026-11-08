@@ -1,4 +1,4 @@
-// =============================================================================
+﻿// =============================================================================
 // Phone Control - Client Application Logic
 // =============================================================================
 
@@ -142,10 +142,13 @@
 
     state.ws = new WebSocket(wsUrl);
 
+    let isAuthRejected = false;
+
     state.ws.onopen = () => {
       statusText.textContent = 'Conectado';
       statusIndicator.className = 'status-dot connected';
       state.connected = true;
+      isAuthRejected = false;
       hideAuthModal();
       requestWakeLock();
       startPing();
@@ -156,8 +159,12 @@
         const msg = JSON.parse(event.data);
         if (msg.type === 'auth_status') {
           if (!msg.authenticated) {
-            statusText.textContent = 'Token inválido';
+            isAuthRejected = true;
+            statusText.textContent = 'PIN inválido o expirado';
             showAuthModal();
+          } else {
+            isAuthRejected = false;
+            hideAuthModal();
           }
         } else if (msg.type === 'pong') {
           const rtt = Math.max(1, Date.now() - msg.clientTime);
@@ -168,11 +175,18 @@
 
     state.ws.onclose = () => {
       state.connected = false;
-      statusText.textContent = 'Desconectado';
       statusIndicator.className = 'status-dot disconnected';
       latencyBadge.textContent = '-- ms';
       stopPing();
-      setTimeout(connectWebSocket, 2000);
+
+      if (isAuthRejected) {
+        statusText.textContent = 'PIN incorrecto. Ingresa el nuevo PIN';
+        showAuthModal();
+        return; // Detener bucle de reintentos continuos para evitar bloqueos por rate-limit
+      }
+
+      statusText.textContent = 'Desconectado (reintentando...)';
+      setTimeout(connectWebSocket, 2500);
     };
 
     state.ws.onerror = () => {
@@ -216,6 +230,13 @@
     if (val) {
       localStorage.setItem('pc_remote_token', val);
       state.token = val;
+
+      try {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('token', val);
+        window.history.replaceState({}, '', currentUrl.toString());
+      } catch (_) {}
+
       hideAuthModal();
       if (state.ws) state.ws.close();
       connectWebSocket();
@@ -446,7 +467,12 @@
   hiddenInput.addEventListener('input', (e) => {
     const val = hiddenInput.value;
     if (val && val.length > 0) {
-      sendWS({ type: 'text', text: val });
+      if (val === ' ') {
+        sendWS({ type: 'tapkey', key: 'Space' });
+        vibrate(10);
+      } else {
+        sendWS({ type: 'text', text: val });
+      }
       hiddenInput.value = '';
     }
   });
@@ -462,6 +488,11 @@
       e.preventDefault();
       sendWS({ type: 'tapkey', key: 'Tab' });
       vibrate(10);
+    } else if (e.key === ' ' || e.key === 'Spacebar' || e.code === 'Space' || e.keyCode === 32) {
+      e.preventDefault();
+      sendWS({ type: 'tapkey', key: 'Space' });
+      vibrate(10);
+      hiddenInput.value = '';
     }
   });
 

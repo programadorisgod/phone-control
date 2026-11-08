@@ -1,10 +1,10 @@
-import http from 'node:http';
+﻿import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import net from 'node:net';
-import { spawn, execFile } from 'node:child_process';
+import { spawn, execFile, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import qrcode from 'qrcode-terminal';
@@ -13,15 +13,37 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const PUBLIC_DIR = path.join(PROJECT_ROOT, 'public');
-const DRIVER_BIN = path.join(__dirname, 'uinput_driver');
+
+const IS_WINDOWS = process.platform === 'win32';
+const DRIVER_BIN = IS_WINDOWS
+  ? path.join(__dirname, 'windows_driver.exe')
+  : path.join(__dirname, 'uinput_driver');
 
 const DEFAULT_PORT = parseInt(process.env.PORT || '5252', 10);
-// Cryptographically secure token generated per session
-const TOKEN = process.env.TOKEN || crypto.randomBytes(3).toString('hex').toLowerCase();
+
+// Get or persist PIN across restarts so mobile clients reconnect seamlessly
+function getOrCreateToken() {
+  if (process.env.TOKEN) return process.env.TOKEN.trim().toLowerCase();
+  const tokenFile = path.join(__dirname, '.pin');
+  try {
+    if (fs.existsSync(tokenFile)) {
+      const saved = fs.readFileSync(tokenFile, 'utf8').trim().toLowerCase();
+      if (saved.length >= 4) return saved;
+    }
+  } catch (_) {}
+
+  const newToken = crypto.randomBytes(3).toString('hex').toLowerCase();
+  try {
+    fs.writeFileSync(tokenFile, newToken, 'utf8');
+  } catch (_) {}
+  return newToken;
+}
+
+const TOKEN = getOrCreateToken();
 
 // Rate limiting & failed auth tracking
-const MAX_FAILED_ATTEMPTS = 5;
-const BLOCK_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_FAILED_ATTEMPTS = 15;
+const BLOCK_DURATION_MS = 30 * 1000; // 30 seconds cooldown
 const failedAuthMap = new Map(); // ip -> { count, blockedUntil }
 
 function isIpBlocked(ip) {
@@ -40,7 +62,7 @@ function recordFailedAuth(ip) {
   record.count += 1;
   if (record.count >= MAX_FAILED_ATTEMPTS) {
     record.blockedUntil = Date.now() + BLOCK_DURATION_MS;
-    console.warn(`🚨 [Security] IP ${ip} bloqueada por ${BLOCK_DURATION_MS / 60000} minutos tras múltiples intentos fallidos.`);
+    console.warn(`🚨 [Security] IP ${ip} en enfriamiento por ${BLOCK_DURATION_MS / 1000} segundos tras intentos fallidos.`);
   }
   failedAuthMap.set(ip, record);
 }
@@ -63,13 +85,31 @@ function getAllNetworkInterfaces() {
   const interfaces = os.networkInterfaces();
   const list = [];
   for (const [name, nets] of Object.entries(interfaces)) {
+    const lowerName = name.toLowerCase();
+
+    // Filter out virtual/container adapters
+    if (
+      lowerName.startsWith('docker') ||
+      lowerName.startsWith('br-') ||
+      lowerName.includes('vethernet') ||
+      lowerName.includes('virtual') ||
+      lowerName.includes('vmware') ||
+      lowerName.includes('vbox') ||
+      lowerName.includes('pseudo')
+    ) {
+      continue;
+    }
+
     for (const net of nets || []) {
       if (net.family === 'IPv4' && !net.internal) {
         let type = 'LAN';
-        if (name.startsWith('wl')) type = 'Wi-Fi';
-        else if (name.startsWith('en') || name.startsWith('eth')) type = 'Ethernet';
-        else if (name.startsWith('tailscale')) type = 'Tailscale';
-        else if (name.startsWith('docker') || name.startsWith('br-')) continue;
+        if (lowerName.includes('wi-fi') || lowerName.includes('wireless') || lowerName.startsWith('wl')) {
+          type = 'Wi-Fi';
+        } else if (lowerName.includes('ethernet') || lowerName.startsWith('en') || lowerName.startsWith('eth')) {
+          type = 'Ethernet';
+        } else if (lowerName.includes('tailscale')) {
+          type = 'Tailscale';
+        }
 
         list.push({ name, address: net.address, type });
       }
@@ -98,8 +138,8 @@ async function findAvailablePort(startPort) {
   });
 }
 
-// Linux input keycode mapping
-const KEY_MAP = {
+// Linux evdev input keycode mapping
+const KEY_MAP_LINUX = {
   'Enter': 28, 'Escape': 1, 'Backspace': 14, 'Tab': 15, 'Space': 57,
   'ArrowUp': 103, 'ArrowDown': 108, 'ArrowLeft': 105, 'ArrowRight': 106,
   'Delete': 111, 'Home': 102, 'End': 107, 'PageUp': 104, 'PageDown': 109,
@@ -111,17 +151,75 @@ const KEY_MAP = {
   'KeyG': 34, 'KeyH': 35, 'KeyI': 23, 'KeyJ': 36, 'KeyK': 37, 'KeyL': 38,
   'KeyM': 50, 'KeyN': 49, 'KeyO': 24, 'KeyP': 25, 'KeyQ': 16, 'KeyR': 19,
   'KeyS': 31, 'KeyT': 20, 'KeyU': 22, 'KeyV': 47, 'KeyW': 17, 'KeyX': 45,
-  'KeyY': 21, 'KeyZ': 44
+  'KeyY': 21, 'KeyZ': 44,
+  'F1': 59, 'F2': 60, 'F3': 61, 'F4': 62, 'F5': 63, 'F6': 64,
+  'F7': 65, 'F8': 66, 'F9': 67, 'F10': 68, 'F11': 87, 'F12': 88
 };
+
+// Windows Virtual-Key code mapping
+const KEY_MAP_WINDOWS = {
+  'Enter': 0x0D, 'Escape': 0x1B, 'Backspace': 0x08, 'Tab': 0x09, 'Space': 0x20,
+  'ArrowUp': 0x26, 'ArrowDown': 0x28, 'ArrowLeft': 0x25, 'ArrowRight': 0x27,
+  'Delete': 0x2E, 'Home': 0x24, 'End': 0x23, 'PageUp': 0x21, 'PageDown': 0x22,
+  'ControlLeft': 0xA2, 'ControlRight': 0xA3, 'ShiftLeft': 0xA0, 'ShiftRight': 0xA1,
+  'AltLeft': 0xA4, 'AltRight': 0xA5, 'MetaLeft': 0x5B,
+  'VolumeUp': 0xAF, 'VolumeDown': 0xAE, 'Mute': 0xAD,
+  'PlayPause': 0xB3, 'NextTrack': 0xB0, 'PrevTrack': 0xB1,
+  'KeyA': 0x41, 'KeyB': 0x42, 'KeyC': 0x43, 'KeyD': 0x44, 'KeyE': 0x45, 'KeyF': 0x46,
+  'KeyG': 0x47, 'KeyH': 0x48, 'KeyI': 0x49, 'KeyJ': 0x4A, 'KeyK': 0x4B, 'KeyL': 0x4C,
+  'KeyM': 0x4D, 'KeyN': 0x4E, 'KeyO': 0x4F, 'KeyP': 0x50, 'KeyQ': 0x51, 'KeyR': 0x52,
+  'KeyS': 0x53, 'KeyT': 0x54, 'KeyU': 0x55, 'KeyV': 0x56, 'KeyW': 0x57, 'KeyX': 0x58,
+  'KeyY': 0x59, 'KeyZ': 0x5A,
+  'F1': 0x70, 'F2': 0x71, 'F3': 0x72, 'F4': 0x73, 'F5': 0x74, 'F6': 0x75,
+  'F7': 0x76, 'F8': 0x77, 'F9': 0x78, 'F10': 0x79, 'F11': 0x7A, 'F12': 0x7B
+};
+
+const KEY_MAP = IS_WINDOWS ? KEY_MAP_WINDOWS : KEY_MAP_LINUX;
+const MAX_KEY_CODE = IS_WINDOWS ? 0xFFFF : 767;
 
 // Driver management
 let driverProcess = null;
 let driverReady = false;
 
+function autoCompileWindowsDriver() {
+  const sysRoot = process.env.SystemRoot || 'C:\\Windows';
+  const candidates = [
+    path.join(sysRoot, 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe'),
+    path.join(sysRoot, 'Microsoft.NET', 'Framework', 'v4.0.30319', 'csc.exe')
+  ];
+  const cscPath = candidates.find(p => fs.existsSync(p));
+  const csFile = path.join(__dirname, 'windows_driver.cs');
+
+  if (cscPath && fs.existsSync(csFile)) {
+    console.log('⚙️ [Windows] Compilando windows_driver.exe automáticamente con C# nativo...');
+    try {
+      execFileSync(cscPath, [
+        '/nologo',
+        '/optimize+',
+        '/platform:anycpu',
+        `/out:${DRIVER_BIN}`,
+        csFile
+      ], { stdio: 'inherit' });
+      return fs.existsSync(DRIVER_BIN);
+    } catch (err) {
+      console.error('❌ Error compilando con csc.exe:', err.message);
+    }
+  }
+  return false;
+}
+
 function startDriver() {
   if (!fs.existsSync(DRIVER_BIN)) {
-    console.error(`[Driver] Binario no encontrado en ${DRIVER_BIN}. Ejecuta 'make' en backend.`);
-    return;
+    if (IS_WINDOWS) {
+      const ok = autoCompileWindowsDriver();
+      if (!ok) {
+        console.error(`[Driver] Binario no encontrado en ${DRIVER_BIN}. Ejecuta 'build-windows.bat' en backend.`);
+        return;
+      }
+    } else {
+      console.error(`[Driver] Binario no encontrado en ${DRIVER_BIN}. Ejecuta 'make' en backend.`);
+      return;
+    }
   }
 
   driverProcess = spawn(DRIVER_BIN, [], {
@@ -132,7 +230,8 @@ function startDriver() {
     const msg = data.toString().trim();
     if (msg.includes('READY')) {
       driverReady = true;
-      console.log('⚡ [Kernel uinput] Dispositivo de entrada virtual listo (<1ms latencia).');
+      const driverDesc = IS_WINDOWS ? 'Win32 SendInput' : 'Kernel uinput';
+      console.log(`⚡ [${driverDesc}] Dispositivo de entrada virtual listo (<1ms latencia).`);
     }
   });
 
@@ -155,33 +254,89 @@ function sendToDriver(command) {
   }
 }
 
-// Media execution using safe execFile without shell interpretation
+// Media execution
 function handleMediaCommand(action) {
-  switch (action) {
-    case 'volume_up':
-      execFile('wpctl', ['set-volume', '@DEFAULT_AUDIO_SINK@', '5%+'], () => {});
-      sendToDriver('TAPKEY 115');
-      break;
-    case 'volume_down':
-      execFile('wpctl', ['set-volume', '@DEFAULT_AUDIO_SINK@', '5%-'], () => {});
-      sendToDriver('TAPKEY 114');
-      break;
-    case 'mute':
-      execFile('wpctl', ['set-mute', '@DEFAULT_AUDIO_SINK@', 'toggle'], () => {});
-      sendToDriver('TAPKEY 113');
-      break;
-    case 'play_pause':
-      execFile('playerctl', ['play-pause'], () => {});
-      sendToDriver('TAPKEY 164');
-      break;
-    case 'next':
-      execFile('playerctl', ['next'], () => {});
-      sendToDriver('TAPKEY 163');
-      break;
-    case 'prev':
-      execFile('playerctl', ['previous'], () => {});
-      sendToDriver('TAPKEY 165');
-      break;
+  if (IS_WINDOWS) {
+    switch (action) {
+      case 'volume_up':
+        sendToDriver(`TAPKEY ${KEY_MAP['VolumeUp']}`);
+        break;
+      case 'volume_down':
+        sendToDriver(`TAPKEY ${KEY_MAP['VolumeDown']}`);
+        break;
+      case 'mute':
+        sendToDriver(`TAPKEY ${KEY_MAP['Mute']}`);
+        break;
+      case 'play_pause':
+        sendToDriver(`TAPKEY ${KEY_MAP['PlayPause']}`);
+        break;
+      case 'next':
+        sendToDriver(`TAPKEY ${KEY_MAP['NextTrack']}`);
+        break;
+      case 'prev':
+        sendToDriver(`TAPKEY ${KEY_MAP['PrevTrack']}`);
+        break;
+      case 'seek_backward_5':
+        // Universal Left Arrow (-5s in YouTube, Netflix, media players)
+        sendToDriver(`TAPKEY ${KEY_MAP['ArrowLeft']}`);
+        break;
+      case 'seek_forward_5':
+        // Universal Right Arrow (+5s in YouTube, Netflix, media players)
+        sendToDriver(`TAPKEY ${KEY_MAP['ArrowRight']}`);
+        break;
+      case 'seek_backward_10':
+        // Key J (-10s in YouTube / web video) or double Left Arrow
+        sendToDriver(`TAPKEY ${KEY_MAP['KeyJ']}`);
+        break;
+      case 'seek_forward_10':
+        // Key L (+10s in YouTube / web video) or double Right Arrow
+        sendToDriver(`TAPKEY ${KEY_MAP['KeyL']}`);
+        break;
+    }
+  } else {
+    // Linux execFile without shell interpretation
+    switch (action) {
+      case 'volume_up':
+        execFile('wpctl', ['set-volume', '@DEFAULT_AUDIO_SINK@', '5%+'], () => {});
+        sendToDriver('TAPKEY 115');
+        break;
+      case 'volume_down':
+        execFile('wpctl', ['set-volume', '@DEFAULT_AUDIO_SINK@', '5%-'], () => {});
+        sendToDriver('TAPKEY 114');
+        break;
+      case 'mute':
+        execFile('wpctl', ['set-mute', '@DEFAULT_AUDIO_SINK@', 'toggle'], () => {});
+        sendToDriver('TAPKEY 113');
+        break;
+      case 'play_pause':
+        execFile('playerctl', ['play-pause'], () => {});
+        sendToDriver('TAPKEY 164');
+        break;
+      case 'next':
+        execFile('playerctl', ['next'], () => {});
+        sendToDriver('TAPKEY 163');
+        break;
+      case 'prev':
+        execFile('playerctl', ['previous'], () => {});
+        sendToDriver('TAPKEY 165');
+        break;
+      case 'seek_backward_5':
+        execFile('playerctl', ['position', '5-'], () => {});
+        sendToDriver(`TAPKEY ${KEY_MAP['ArrowLeft']}`);
+        break;
+      case 'seek_forward_5':
+        execFile('playerctl', ['position', '5+'], () => {});
+        sendToDriver(`TAPKEY ${KEY_MAP['ArrowRight']}`);
+        break;
+      case 'seek_backward_10':
+        execFile('playerctl', ['position', '10-'], () => {});
+        sendToDriver(`TAPKEY ${KEY_MAP['KeyJ']}`);
+        break;
+      case 'seek_forward_10':
+        execFile('playerctl', ['position', '10+'], () => {});
+        sendToDriver(`TAPKEY ${KEY_MAP['KeyL']}`);
+        break;
+    }
   }
 }
 
@@ -257,9 +412,14 @@ const wss = new WebSocketServer({
 
 server.on('upgrade', (req, socket, head) => {
   const clientIp = req.socket.remoteAddress || 'unknown';
+  const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const reqToken = url.searchParams.get('token');
 
-  // 1. Check IP rate-limiting
-  if (isIpBlocked(clientIp)) {
+  // If the client supplies the valid token, instantly unblock and allow!
+  if (reqToken && safeTokenCheck(reqToken)) {
+    recordSuccessfulAuth(clientIp);
+  } else if (isIpBlocked(clientIp)) {
+    console.warn(`🚨 [Security] Rechazando conexión temporalmente bloqueada: ${clientIp}`);
     socket.write('HTTP/1.1 429 Too Many Requests\r\n\r\n');
     socket.destroy();
     return;
@@ -369,32 +529,41 @@ wss.on('connection', (ws, req) => {
           }
           break;
 
-        case 'key':
+        case 'key': {
           let keycode = typeof msg.code === 'number' ? msg.code : KEY_MAP[msg.key];
-          if (typeof keycode === 'number' && keycode > 0 && keycode <= 767) {
+          if (typeof keycode === 'number' && keycode > 0 && keycode <= MAX_KEY_CODE) {
             sendToDriver(`KEY ${keycode} ${msg.state ? 1 : 0}`);
           }
           break;
+        }
 
-        case 'tapkey':
+        case 'tapkey': {
           let tapCode = typeof msg.code === 'number' ? msg.code : KEY_MAP[msg.key];
-          if (typeof tapCode === 'number' && tapCode > 0 && tapCode <= 767) {
+          if (typeof tapCode === 'number' && tapCode > 0 && tapCode <= MAX_KEY_CODE) {
             sendToDriver(`TAPKEY ${tapCode}`);
           }
           break;
+        }
 
-        case 'shortcut':
+        case 'shortcut': {
           if (Array.isArray(msg.keys) && msg.keys.length <= 4) {
-            const codes = msg.keys
+            let rawKeys = msg.keys;
+            // On Windows, translate Super+Q (Cerrar App in mobile UI) to Alt+F4
+            if (IS_WINDOWS && rawKeys.length === 2 && rawKeys[0] === 'MetaLeft' && rawKeys[1] === 'KeyQ') {
+              rawKeys = ['AltLeft', 'F4'];
+            }
+
+            const codes = rawKeys
               .map(k => typeof k === 'number' ? k : KEY_MAP[k])
-              .filter(c => typeof c === 'number' && c > 0 && c <= 767);
+              .filter(c => typeof c === 'number' && c > 0 && c <= MAX_KEY_CODE);
 
             for (const code of codes) sendToDriver(`KEY ${code} 1`);
             setTimeout(() => {
-              for (const code of codes.reverse()) sendToDriver(`KEY ${code} 0`);
+              for (const code of codes.slice().reverse()) sendToDriver(`KEY ${code} 0`);
             }, 30);
           }
           break;
+        }
 
         case 'text':
           if (typeof msg.text === 'string' && msg.text.length > 0 && msg.text.length <= 256) {
@@ -460,7 +629,9 @@ function shutdown() {
   console.log('\nCerrando Phone Control de forma segura...');
   if (driverProcess) {
     sendToDriver('QUIT');
-    driverProcess.kill('SIGTERM');
+    try {
+      driverProcess.kill(IS_WINDOWS ? undefined : 'SIGTERM');
+    } catch (_) {}
   }
   process.exit(0);
 }
