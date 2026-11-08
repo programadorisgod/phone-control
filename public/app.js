@@ -1,4 +1,4 @@
-﻿// =============================================================================
+// =============================================================================
 // Phone Control - Client Application Logic
 // =============================================================================
 
@@ -603,6 +603,17 @@
       requestWakeLock();
     }
   });
+
+  // --- Force Refresh Button ---
+  const btnForceRefresh = document.getElementById('btn-force-refresh');
+  if (btnForceRefresh) {
+    btnForceRefresh.addEventListener('click', () => {
+      vibrate(25);
+      const u = new URL(window.location.href);
+      u.searchParams.set('_v', Date.now());
+      window.location.href = u.toString();
+    });
+  }
 
   // Initial load
   loadSettings();
